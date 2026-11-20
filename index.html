@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALBUM KEGIATAN – Penyimpanan Foto & Video Kegiatan</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.7);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Drag & Drop Overlay Animation */
+        @keyframes pulse-border {
+            0%, 100% { border-color: #4f46e5; }
+            50% { border-color: #818cf8; }
+        }
+        .drag-active {
+            animation: pulse-border 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200 antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Drag & Drop Global Overlay -->
+    <div id="global-dropzone" class="fixed inset-0 z-50 hidden bg-brand-600/20 backdrop-blur-sm border-4 border-dashed border-brand-500 m-3 rounded-3xl flex flex-col items-center justify-center pointer-events-none transition-all">
+        <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl text-center max-w-md mx-4">
+            <div class="w-16 h-16 bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-1">Lepaskan File di Sini</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Unggah foto (JPG, PNG, WEBP) atau video (MP4, WEBM) langsung ke galeri.</p>
+        </div>
+    </div>
+
+    <!-- App Layout Container -->
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- Desktop Sidebar -->
+        <aside class="hidden lg:flex lg:flex-col lg:w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shrink-0">
+            <!-- Brand Header -->
+            <div class="p-6 flex items-center gap-3 border-b border-slate-100 dark:border-slate-800/80">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/25">
+                    <i data-lucide="images" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base tracking-tight leading-tight">ALBUM KEGIATAN</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Dokumentasi Foto & Video</p>
+                </div>
+            </div>
+
+            <!-- Primary Action Button -->
+            <div class="p-4">
+                <button onclick="openUploadModal()" class="w-full py-3 px-4 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-medium rounded-2xl shadow-md shadow-brand-600/20 flex items-center justify-center gap-2 transition-all">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                    <span>Catat & Unggah Kegiatan</span>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 overflow-y-auto px-3 space-y-6">
+                <!-- Menu Utama -->
+                <div>
+                    <p class="px-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Dokumentasi</p>
+                    <div class="space-y-1">
+                        <button onclick="setFilter('all', null)" data-nav="all" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
+                            <span class="flex items-center gap-3"><i data-lucide="layout-grid" class="w-4 h-4"></i> Semua Kegiatan</span>
+                            <span id="count-all" class="text-xs px-2 py-0.5 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 shadow-sm">0</span>
+                        </button>
+                        <button onclick="setFilter('image', null)" data-nav="image" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors">
+                            <span class="flex items-center gap-3"><i data-lucide="image" class="w-4 h-4"></i> Foto Kegiatan</span>
+                            <span id="count-image" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">0</span>
+                        </button>
+                        <button onclick="setFilter('video', null)" data-nav="video" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors">
+                            <span class="flex items-center gap-3"><i data-lucide="video" class="w-4 h-4"></i> Video Kegiatan</span>
+                            <span id="count-video" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">0</span>
+                        </button>
+                        <button onclick="setFilter('favorite', null)" data-nav="favorite" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors">
+                            <span class="flex items-center gap-3"><i data-lucide="star" class="w-4 h-4"></i> Sorotan Utama</span>
+                            <span id="count-favorite" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">0</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Manajemen Album / Folder -->
+                <div>
+                    <div class="px-3 flex items-center justify-between mb-2">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Kategori Kegiatan</p>
+                        <button onclick="openFolderModal()" title="Buat Kategori Baru" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-brand-600 dark:text-brand-400 transition-colors">
+                            <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div id="desktop-folder-list" class="space-y-1">
+                        <!-- Folder items injected via JS -->
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Private Mode Toggle & Storage Indicator -->
+            <div class="p-4 border-t border-slate-100 dark:border-slate-800 space-y-3 bg-slate-50/50 dark:bg-slate-900/50">
+                <!-- Kunci/Sembunyikan Privat Toggle -->
+                <div class="flex items-center justify-between bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+                    <div class="flex items-center gap-2">
+                        <i id="private-lock-icon" data-lucide="lock" class="w-4 h-4 text-amber-500"></i>
+                        <span class="text-xs font-medium">Mode Privat Terkunci</span>
+                    </div>
+                    <button id="toggle-private-btn" onclick="togglePrivateVisibility()" class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-amber-500 transition-colors duration-200 ease-in-out focus:outline-none" role="switch" aria-checked="true">
+                        <span id="toggle-private-knob" class="translate-x-4 pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                    </button>
+                </div>
+
+                <!-- Storage Usage Indicator -->
+                <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+                    <div class="flex items-center justify-between text-xs mb-1.5">
+                        <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Penyimpanan Lokal
+                        </span>
+                        <span id="storage-text" class="font-semibold text-slate-700 dark:text-slate-200">Menghitung...</span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                        <div id="storage-bar" class="bg-brand-500 h-1.5 rounded-full transition-all duration-500" style="width: 5%"></div>
+                    </div>
+                    <p id="storage-subtext" class="text-[11px] text-slate-400 mt-1">IndexedDB Browser Permanen</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            
+            <!-- Top Header Bar -->
+            <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between gap-3 z-20">
+                <!-- Mobile Menu & Brand -->
+                <div class="flex items-center gap-2.5 lg:hidden">
+                    <button onclick="toggleMobileDrawer()" class="p-2.5 -ml-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-white">
+                            <i data-lucide="images" class="w-4 h-4"></i>
+                        </div>
+                        <span class="font-bold text-sm tracking-tight">ALBUM KEGIATAN</span>
+                    </div>
+                </div>
+
+                <!-- Search Input -->
+                <div class="flex-1 max-w-xl relative">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="Cari nama kegiatan, lokasi, koordinator, atau keterangan..." class="w-full pl-10 pr-9 py-2 bg-slate-100 dark:bg-slate-800/90 border border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 rounded-xl text-sm outline-none transition-all placeholder:text-slate-400">
+                    <button id="clear-search-btn" onclick="clearSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+
+                <!-- Right Controls: View Switcher, Sort, Theme -->
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                    <!-- Export Rekap Button -->
+                    <button onclick="exportActivitySummary()" title="Salin Rekap Laporan Kegiatan" class="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/25 text-xs font-semibold transition-colors">
+                        <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                        <span>Rekap</span>
+                    </button>
+
+                    <!-- View Mode Toggle (Grid vs Timeline) -->
+                    <div class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                        <button onclick="setViewMode('grid')" id="btn-view-grid" title="Tampilan Grid" class="p-1.5 rounded-lg bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm transition-all">
+                            <i data-lucide="grid" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="setViewMode('timeline')" id="btn-view-timeline" title="Tampilan Timeline Tanggal" class="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all">
+                            <i data-lucide="calendar-days" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- Sort Dropdown -->
+                    <select id="sort-select" onchange="handleSort(this.value)" aria-label="Urutkan media" class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-medium px-2.5 sm:px-3 py-2 rounded-xl outline-none border border-transparent focus:border-brand-500 cursor-pointer">
+                        <option value="newest">Terbaru</option>
+                        <option value="oldest">Terlama</option>
+                        <option value="az">Judul A-Z</option>
+                    </select>
+
+                    <!-- Dark/Light Mode Toggle -->
+                    <button onclick="toggleTheme()" title="Ganti Tema Terang/Gelap" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+                        <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Mobile Horizontal Album & Filter Strip -->
+            <div class="lg:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                <button onclick="setViewMode(currentViewMode === 'grid' ? 'timeline' : 'grid')" class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                    <i id="mobile-view-icon" data-lucide="calendar-days" class="w-3.5 h-3.5 text-brand-500"></i>
+                    <span id="mobile-view-label">Timeline</span>
+                </button>
+                <div class="h-4 w-px bg-slate-200 dark:bg-slate-700 shrink-0"></div>
+                <div id="mobile-folder-chips" class="flex items-center gap-2">
+                    <!-- Folder chips injected via JS -->
+                </div>
+                <button onclick="openFolderModal()" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium border border-dashed border-slate-300 dark:border-slate-700 text-brand-600 dark:text-brand-400">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Album
+                </button>
+            </div>
+
+            <!-- Active Section Header & Breadcrumb -->
+            <div class="px-4 sm:px-6 pt-5 pb-2 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 id="gallery-title" class="text-xl sm:text-2xl font-bold tracking-tight">Semua Media</h2>
+                        <span id="gallery-badge" class="hidden px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 items-center gap-1">
+                            <i data-lucide="lock" class="w-3 h-3"></i> Privat
+                        </span>
+                    </div>
+                    <p id="gallery-subtitle" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Menampilkan seluruh koleksi foto dan video tersimpan</p>
+                </div>
+
+                <!-- Folder Action Buttons (visible when a specific folder is selected) -->
+                <div id="folder-actions" class="hidden items-center gap-2">
+                    <button onclick="toggleCurrentFolderPrivacy()" id="btn-toggle-folder-privacy" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-1.5 transition-colors">
+                        <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                        <span>Ubah Status Privasi</span>
+                    </button>
+                    <button onclick="deleteCurrentFolder()" id="btn-delete-folder" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 flex items-center gap-1.5 transition-colors">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <span>Hapus Album</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Gallery Scrollable Viewport -->
+            <main id="gallery-container" class="flex-1 overflow-y-auto px-4 sm:px-6 pb-24 lg:pb-8 pt-2">
+                <!-- Media Grid / Timeline injected here -->
+                <div id="media-content"></div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="lg:hidden fixed bottom-0 inset-x-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 flex items-center justify-around z-30">
+        <button onclick="setFilter('all', null)" data-mob-nav="all" class="mob-nav-item flex flex-col items-center justify-center p-2 rounded-xl text-brand-600 dark:text-brand-400 min-w-[60px]">
+            <i data-lucide="layout-grid" class="w-5 h-5"></i>
+            <span class="text-[10px] font-medium mt-1">Semua</span>
+        </button>
+        <button onclick="setFilter('image', null)" data-mob-nav="image" class="mob-nav-item flex flex-col items-center justify-center p-2 rounded-xl text-slate-500 dark:text-slate-400 min-w-[60px]">
+            <i data-lucide="image" class="w-5 h-5"></i>
+            <span class="text-[10px] font-medium mt-1">Foto</span>
+        </button>
+        <!-- Center Floating Upload Button -->
+        <button onclick="openUploadModal()" class="flex items-center justify-center w-12 h-12 -mt-5 rounded-2xl bg-brand-600 text-white shadow-lg shadow-brand-600/30 active:scale-95 transition-transform" aria-label="Unggah Media">
+            <i data-lucide="plus" class="w-6 h-6"></i>
+        </button>
+        <button onclick="setFilter('video', null)" data-mob-nav="video" class="mob-nav-item flex flex-col items-center justify-center p-2 rounded-xl text-slate-500 dark:text-slate-400 min-w-[60px]">
+            <i data-lucide="video" class="w-5 h-5"></i>
+            <span class="text-[10px] font-medium mt-1">Video</span>
+        </button>
+        <button onclick="setFilter('favorite', null)" data-mob-nav="favorite" class="mob-nav-item flex flex-col items-center justify-center p-2 rounded-xl text-slate-500 dark:text-slate-400 min-w-[60px]">
+            <i data-lucide="heart" class="w-5 h-5"></i>
+            <span class="text-[10px] font-medium mt-1">Favorit</span>
+        </button>
+    </nav>
+
+    <!-- Mobile Side Drawer (For Folders, Privacy & Storage) -->
+    <div id="mobile-drawer" class="fixed inset-0 z-50 hidden lg:hidden">
+        <div onclick="toggleMobileDrawer()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"></div>
+        <div class="relative w-72 max-w-[82vw] h-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col justify-between p-5 overflow-y-auto">
+            <div>
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white">
+                            <i data-lucide="images" class="w-4 h-4"></i>
+                        </div>
+                        <span class="font-bold text-sm">ALBUM DIGITAL</span>
+                    </div>
+                    <button onclick="toggleMobileDrawer()" class="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Mobile Drawer Folders -->
+                <div class="mt-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Daftar Album</span>
+                        <button onclick="toggleMobileDrawer(); openFolderModal();" class="text-xs font-medium text-brand-600 dark:text-brand-400 flex items-center gap-1">
+                            <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i> Baru
+                        </button>
+                    </div>
+                    <div id="drawer-folder-list" class="space-y-1"></div>
+                </div>
+            </div>
+
+            <div class="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <!-- Private Mode Mobile Toggle -->
+                <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="lock" class="w-4 h-4 text-amber-500"></i>
+                        <span class="text-xs font-medium">Sembunyikan Privat</span>
+                    </div>
+                    <button onclick="togglePrivateVisibility()" id="mob-toggle-private-btn" class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-amber-500 transition-colors">
+                        <span id="mob-toggle-private-knob" class="translate-x-4 pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition"></span>
+                    </button>
+                </div>
+                <!-- Storage Info Mobile -->
+                <div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-500">Penyimpanan</span>
+                        <span id="mob-storage-text" class="font-semibold">0 MB</span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                        <div id="mob-storage-bar" class="bg-brand-500 h-1.5 rounded-full" style="width: 5%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: UNGGAH MEDIA (UPLOAD MODAL) -->
+    <div id="upload-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">Unggah Foto & Video</h3>
+                </div>
+                <button onclick="closeUploadModal()" class="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="upload-form" onsubmit="handleUploadSubmit(event)" class="p-6 space-y-4 max-h-[82vh] overflow-y-auto">
+                <!-- File Drop Area -->
+                <div onclick="document.getElementById('file-input').click()" class="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-500 dark:hover:border-brand-400 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-slate-50/70 dark:bg-slate-800/40">
+                    <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onchange="handleFileSelect(this.files)" class="hidden">
+                    <i data-lucide="file-plus-2" class="w-9 h-9 text-brand-500 mx-auto mb-2"></i>
+                    <p class="text-sm font-semibold">Klik untuk memilih file atau seret ke sini</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Mendukung JPG, PNG, WEBP, MP4, WEBM (Bisa pilih banyak file sekaligus)</p>
+                </div>
+
+                <!-- Selected Files Preview Strip -->
+                <div id="selected-files-preview" class="hidden space-y-2">
+                    <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+                        <span id="selected-files-count">0 file dipilih</span>
+                        <button type="button" onclick="clearSelectedFiles()" class="text-red-500 hover:underline">Hapus Pilihan</button>
+                    </div>
+                    <div id="selected-files-list" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-36 overflow-y-auto p-1"></div>
+                </div>
+
+                <!-- Structured Naming & Metadata -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Nama Kegiatan *</label>
+                        <input type="text" id="upload-title" required placeholder="Contoh: Rapat Kerja Tahunan / Bakti Sosial" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Tanggal Kegiatan *</label>
+                        <input type="date" id="upload-date" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 text-sm outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Lokasi Kegiatan</label>
+                        <input type="text" id="upload-location" placeholder="Contoh: Aula Utama / Lapangan Desa" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Penanggung Jawab / Peserta</label>
+                        <input type="text" id="upload-pic" placeholder="Contoh: Tim Humas / Divisi Acara" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 text-sm outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Kategori / Folder Kegiatan</label>
+                        <select id="upload-folder" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Status Privasi Dokumentasi</label>
+                        <select id="upload-privacy" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none">
+                            <option value="public">🌐 Publik (Tampil Normal)</option>
+                            <option value="private">🔒 Privat (Tersembunyi saat terkunci)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Catatan / Ringkasan Kegiatan</label>
+                    <textarea id="upload-desc" rows="2" placeholder="Tuliskan ringkasan jalannya kegiatan, hasil, atau keterangan tambahan..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 text-sm outline-none resize-none"></textarea>
+                </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Tanggal Dokumentasi *</label>
+                        <input type="date" id="upload-date" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 text-sm outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Simpan ke Album / Folder</label>
+                        <select id="upload-folder" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Status Privasi Media</label>
+                        <select id="upload-privacy" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none">
+                            <option value="public">🌐 Publik (Tampil Normal)</option>
+                            <option value="private">🔒 Privat (Tersembunyi saat terkunci)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Catatan / Deskripsi</label>
+                    <textarea id="upload-desc" rows="2" placeholder="Tambahkan cerita singkat, lokasi, atau keterangan..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 text-sm outline-none resize-none"></textarea>
+                </div>
+
+                <div class="pt-2 flex items-center justify-end gap-3">
+                    <button type="button" onclick="closeUploadModal()" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Batal</button>
+                    <button type="submit" id="btn-submit-upload" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-600/20 flex items-center gap-2 transition-all">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Simpan ke Galeri</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: BUAT ALBUM / FOLDER BARU -->
+    <div id="folder-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <h3 class="font-bold text-lg">Buat Album / Folder Baru</h3>
+                <button onclick="closeFolderModal()" class="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form onsubmit="handleCreateFolder(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Nama Album *</label>
+                    <input type="text" id="folder-name-input" required placeholder="Contoh: Acara Wisuda, Proyek Kantor..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Status Akses Album</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="folder-privacy" value="public" checked class="peer sr-only">
+                            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 peer-checked:border-brand-500 peer-checked:bg-brand-50 dark:peer-checked:bg-brand-500/15 transition-all">
+                                <div class="flex items-center gap-2 font-semibold text-sm">
+                                    <i data-lucide="globe" class="w-4 h-4 text-emerald-500"></i> Publik
+                                </div>
+                                <p class="text-[11px] text-slate-500 mt-1">Selalu terlihat di daftar album</p>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="folder-privacy" value="private" class="peer sr-only">
+                            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 peer-checked:border-amber-500 peer-checked:bg-amber-50 dark:peer-checked:bg-amber-500/15 transition-all">
+                                <div class="flex items-center gap-2 font-semibold text-sm">
+                                    <i data-lucide="lock" class="w-4 h-4 text-amber-500"></i> Privat
+                                </div>
+                                <p class="text-[11px] text-slate-500 mt-1">Tersembunyi saat mode kunci aktif</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeFolderModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-md">Buat Album</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: LIGHTBOX PRATINJAU PENUH & KONTROL -->
+    <div id="lightbox-modal" class="fixed inset-0 z-50 hidden bg-slate-950/95 backdrop-blur-md flex-col">
+        <!-- Lightbox Top Bar -->
+        <div class="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-white/10 text-white shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+                <span id="lb-counter" class="text-xs font-mono px-2.5 py-1 rounded-lg bg-white/10 text-slate-300 shrink-0">1 / 1</span>
+                <div class="truncate">
+                    <h3 id="lb-title" class="font-semibold text-sm sm:text-base truncate">Judul Media</h3>
+                    <p id="lb-meta" class="text-xs text-slate-400 truncate">Tanggal • Album</p>
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+                <button onclick="toggleLightboxFavorite()" id="lb-btn-fav" title="Favorit" class="p-2.5 rounded-xl hover:bg-white/10 transition-colors text-slate-300">
+                    <i data-lucide="heart" class="w-5 h-5"></i>
+                </button>
+                <button onclick="openEditMediaModal()" title="Edit Info & Pindah Folder" class="p-2.5 rounded-xl hover:bg-white/10 transition-colors text-slate-300">
+                    <i data-lucide="edit-3" class="w-5 h-5"></i>
+                </button>
+                <button onclick="downloadCurrentMedia()" title="Unduh File" class="p-2.5 rounded-xl hover:bg-white/10 transition-colors text-slate-300">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                </button>
+                <button onclick="deleteCurrentMedia()" title="Hapus Media" class="p-2.5 rounded-xl hover:bg-red-500/20 text-red-400 transition-colors">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+                <div class="w-px h-6 bg-white/15 mx-1"></div>
+                <button onclick="closeLightbox()" title="Tutup (Esc)" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Lightbox Media Stage -->
+        <div class="flex-1 relative flex items-center justify-center p-4 sm:p-8 overflow-hidden select-none" id="lb-stage">
+            <!-- Prev Button -->
+            <button onclick="navigateLightbox(-1)" id="lb-prev" class="absolute left-3 sm:left-6 z-10 p-3 rounded-2xl bg-black/50 hover:bg-black/80 text-white border border-white/10 backdrop-blur-sm transition-all">
+                <i data-lucide="chevron-left" class="w-6 h-6"></i>
+            </button>
+
+            <!-- Media Container -->
+            <div id="lb-media-wrapper" class="max-w-full max-h-full flex items-center justify-center"></div>
+
+            <!-- Next Button -->
+            <button onclick="navigateLightbox(1)" id="lb-next" class="absolute right-3 sm:right-6 z-10 p-3 rounded-2xl bg-black/50 hover:bg-black/80 text-white border border-white/10 backdrop-blur-sm transition-all">
+                <i data-lucide="chevron-right" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- Lightbox Bottom Caption -->
+        <div id="lb-caption-bar" class="px-6 py-3 bg-black/40 border-t border-white/10 text-center text-xs sm:text-sm text-slate-300 shrink-0">
+            <p id="lb-desc" class="max-w-3xl mx-auto line-clamp-2"></p>
+        </div>
+    </div>
+
+    <!-- MODAL 4: EDIT INFO MEDIA & PINDAH ALBUM -->
+    <div id="edit-media-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <h3 class="font-bold text-lg">Edit Informasi Media</h3>
+                <button onclick="closeEditMediaModal()" class="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form onsubmit="handleSaveMediaEdit(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Nama Kegiatan</label>
+                    <input type="text" id="edit-title" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Tanggal</label>
+                        <input type="date" id="edit-date" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Pindah Kategori</label>
+                        <select id="edit-folder" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none"></select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Lokasi Kegiatan</label>
+                        <input type="text" id="edit-location" placeholder="Lokasi..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Penanggung Jawab</label>
+                        <input type="text" id="edit-pic" placeholder="PIC / Peserta..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Status Privasi</label>
+                    <select id="edit-privacy" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none">
+                        <option value="public">🌐 Publik</option>
+                        <option value="private">🔒 Privat</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Catatan / Ringkasan Kegiatan</label>
+                    <textarea id="edit-desc" rows="2" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 text-sm outline-none resize-none"></textarea>
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeEditMediaModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-md">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRMATION DIALOG (Pengganti confirm()) -->
+    <div id="confirm-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <h3 id="confirm-title" class="font-bold text-lg mb-1">Konfirmasi Hapus</h3>
+            <p id="confirm-message" class="text-sm text-slate-500 dark:text-slate-400 mb-6">Apakah Anda yakin ingin menghapus item ini?</p>
+            <div class="flex items-center justify-center gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Batal</button>
+                <button id="confirm-yes-btn" class="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-md transition-colors">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast-container" class="fixed bottom-20 lg:bottom-6 right-4 sm:right-6 z-[80] flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        /**
+         * ============================================================================
+         * ALBUM DIGITAL - CORE APPLICATION LOGIC (IndexedDB + State Management)
+         * ============================================================================
+         */
+
+        const DB_NAME = 'AlbumDigitalDB';
+        const DB_VERSION = 1;
+        let db = null;
+
+        // Application State
+        let state = {
+            folders: [],
+            media: [],
+            filterType: 'all', // 'all' | 'image' | 'video' | 'favorite' | 'folder'
+            selectedFolderId: null,
+            searchQuery: '',
+            sortBy: 'newest', // 'newest' | 'oldest' | 'az'
+            viewMode: 'grid', // 'grid' | 'timeline'
+            hidePrivate: true, // When true, private folders & private media are hidden
+            lightboxIndex: -1,
+            filteredMediaList: [],
+            selectedUploadFiles: [],
+            objectUrls: new Map() // Cache for Blob Object URLs to avoid memory leaks
+        };
+
+        // ============================================================================
+        // 1. INDEXEDDB INITIALIZATION & CRUD OPERATIONS
+        // ============================================================================
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    if (!database.objectStoreNames.contains('folders')) {
+                        database.createObjectStore('folders', { keyPath: 'id' });
+                    }
+                    if (!database.objectStoreNames.contains('media')) {
+                        const mediaStore = database.createObjectStore('media', { keyPath: 'id' });
+                        mediaStore.createIndex('folderId', 'folderId', { unique: false });
+                        mediaStore.createIndex('date', 'date', { unique: false });
+                    }
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    resolve(db);
+                };
+
+                request.onerror = (event) => {
+                    console.error('IndexedDB Error:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        function dbGetAll(storeName) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readonly');
+                const store = tx.objectStore(storeName);
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function dbPut(storeName, item) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readwrite');
+                const store = tx.objectStore(storeName);
+                const req = store.put(item);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function dbDelete(storeName, id) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readwrite');
+                const store = tx.objectStore(storeName);
+                const req = store.delete(id);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        // ============================================================================
+        // 2. SAMPLE MEDIA GENERATOR (Canvas Image & WebM Video Blobs)
+        // ============================================================================
+
+        function createSampleImageBlob(title, subtitle, color1, color2) {
+            return new Promise((resolve) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1200;
+                canvas.height = 800;
+                const ctx = canvas.getContext('2d');
+
+                // Gradient Background
+                const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                grad.addColorStop(0, color1);
+                grad.addColorStop(1, color2);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Decorative Geometric Shapes
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+                ctx.beginPath();
+                ctx.arc(980, 180, 240, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(200, 680, 300, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Mountain / Landscape Silhouette
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.25)';
+                ctx.beginPath();
+                ctx.moveTo(0, 800);
+                ctx.lineTo(0, 560);
+                ctx.lineTo(350, 380);
+                ctx.lineTo(720, 610);
+                ctx.lineTo(980, 420);
+                ctx.lineTo(1200, 540);
+                ctx.lineTo(1200, 800);
+                ctx.closePath();
+                ctx.fill();
+
+                // Text Overlay
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 54px Inter, sans-serif';
+                ctx.fillText(title, 80, 140);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                ctx.font = '30px Inter, sans-serif';
+                ctx.fillText(subtitle, 80, 195);
+
+                canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.9);
+            });
+        }
+
+        function createSampleVideoBlob() {
+            return new Promise((resolve) => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 640;
+                    canvas.height = 360;
+                    const ctx = canvas.getContext('2d');
+
+                    if (!canvas.captureStream || typeof MediaRecorder === 'undefined') {
+                        resolve(null);
+                        return;
+                    }
+
+                    const stream = canvas.captureStream(24);
+                    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+                        ? 'video/webm;codecs=vp9'
+                        : 'video/webm';
+                    const recorder = new MediaRecorder(stream, { mimeType });
+                    const chunks = [];
+
+                    recorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) chunks.push(e.data);
+                    };
+                    recorder.onstop = () => {
+                        resolve(new Blob(chunks, { type: 'video/webm' }));
+                    };
+
+                    recorder.start();
+                    let frame = 0;
+                    const totalFrames = 48; // ~2 seconds smooth loop
+
+                    const drawFrame = () => {
+                        const progress = frame / totalFrames;
+                        const hue = Math.floor(210 + Math.sin(progress * Math.PI * 2) * 40);
+
+                        const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                        grad.addColorStop(0, `hsl(${hue}, 75%, 45%)`);
+                        grad.addColorStop(1, `hsl(${hue + 45}, 80%, 25%)`);
+                        ctx.fillStyle = grad;
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                        // Animated Pulse Circle
+                        const radius = 55 + Math.sin(progress * Math.PI * 4) * 12;
+                        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                        ctx.beginPath();
+                        ctx.arc(320, 165, radius, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Play Triangle Icon
+                        ctx.fillStyle = '#ffffff';
+                        ctx.beginPath();
+                        ctx.moveTo(308, 145);
+                        ctx.lineTo(308, 185);
+                        ctx.lineTo(342, 165);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        ctx.font = 'bold 20px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('SAMPEL KLIP VIDEO TIMELAPSE', 320, 260);
+                        ctx.font = '14px Inter, sans-serif';
+                        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                        ctx.fillText('Album Digital • Rekaman Lokal HD', 320, 286);
+
+                        frame++;
+                        if (frame <= totalFrames) {
+                            requestAnimationFrame(drawFrame);
+                        } else {
+                            recorder.stop();
+                        }
+                    };
+                    drawFrame();
+                } catch (err) {
+                    console.warn('Video sample generation fallback:', err);
+                    resolve(null);
+                }
+            });
+        }
+
+        async function seedInitialDataIfEmpty() {
+            const existingFolders = await dbGetAll('folders');
+            const existingMedia = await dbGetAll('media');
+
+            if (existingFolders.length > 0 || existingMedia.length > 0) {
+                return;
+            }
+
+            // Default Folders
+            const defaultFolders = [
+                { id: 'folder-kegiatan', name: 'Kegiatan & Acara', privacy: 'public', createdAt: Date.now() - 500000 },
+                { id: 'folder-lapangan', name: 'Dokumentasi Lapangan', privacy: 'public', createdAt: Date.now() - 400000 },
+                { id: 'folder-pribadi', name: 'Arsip Internal', privacy: 'private', createdAt: Date.now() - 300000 }
+            ];
+
+            for (const f of defaultFolders) {
+                await dbPut('folders', f);
+            }
+
+            // Generate Sample Images & Video
+            const img1 = await createSampleImageBlob('Bakti Sosial & Penghijauan', 'Dokumentasi Lapangan • Taman Kota', '#10b981', '#0f766e');
+            const img2 = await createSampleImageBlob('Kunjungan Kerja & Survei', 'Ekspedisi Tim • Jawa Timur', '#0284c7', '#1e1b4b');
+            const img3 = await createSampleImageBlob('Workshop & Rapat Evaluasi', 'Aula Utama • Tim Program', '#f97316', '#7c3aed');
+            const img4 = await createSampleImageBlob('Laporan Keuangan & Berita Acara', 'Arsip Internal Panitia', '#ec4899', '#4c1d95');
+            const vid1 = await createSampleVideoBlob();
+
+            const today = new Date().toISOString().split('T')[0];
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            const lastWeek = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+
+            const sampleMedia = [
+                {
+                    id: 'sample-1',
+                    title: 'Bakti Sosial & Penanaman Pohon',
+                    date: today,
+                    location: 'Taman Kota Hijau',
+                    pic: 'Divisi Sosial & Relawan',
+                    folderId: 'folder-lapangan',
+                    privacy: 'public',
+                    description: 'Kegiatan penanaman 100 bibit pohon bersama warga dan relawan komunitas.',
+                    type: 'image',
+                    mimeType: 'image/jpeg',
+                    fileName: 'bakti-sosial.jpg',
+                    size: img1.size,
+                    favorite: true,
+                    blob: img1,
+                    createdAt: Date.now() - 10000
+                },
+                {
+                    id: 'sample-2',
+                    title: 'Survei Lokasi & Koordinasi Lapangan',
+                    date: yesterday,
+                    location: 'Posko Wilayah Timur',
+                    pic: 'Tim Teknis Lapangan',
+                    folderId: 'folder-lapangan',
+                    privacy: 'public',
+                    description: 'Pengecekan kesiapan sarana dan prasarana menjelang pelaksanaan acara utama.',
+                    type: 'image',
+                    mimeType: 'image/jpeg',
+                    fileName: 'survei-lokasi.jpg',
+                    size: img2.size,
+                    favorite: false,
+                    blob: img2,
+                    createdAt: Date.now() - 20000
+                },
+                {
+                    id: 'sample-3',
+                    title: 'Workshop & Rapat Evaluasi Program',
+                    date: lastWeek,
+                    location: 'Aula Lantai 2',
+                    pic: 'Panitia Pelaksana',
+                    folderId: 'folder-kegiatan',
+                    privacy: 'public',
+                    description: 'Sesi pemaparan capaian kegiatan dan penyusunan rencana kerja bulan berikutnya.',
+                    type: 'image',
+                    mimeType: 'image/jpeg',
+                    fileName: 'workshop-evaluasi.jpg',
+                    size: img3.size,
+                    favorite: true,
+                    blob: img3,
+                    createdAt: Date.now() - 30000
+                },
+                {
+                    id: 'sample-4',
+                    title: 'Dokumentasi Berita Acara & Tanda Terima',
+                    date: lastWeek,
+                    location: 'Ruang Sekretariat',
+                    pic: 'Sekretaris Kegiatan',
+                    folderId: 'folder-pribadi',
+                    privacy: 'private',
+                    description: 'Salinan bukti serah terima dan arsip administrasi internal kegiatan.',
+                    type: 'image',
+                    mimeType: 'image/jpeg',
+                    fileName: 'berita-acara.jpg',
+                    size: img4.size,
+                    favorite: false,
+                    blob: img4,
+                    createdAt: Date.now() - 40000
+                }
+            ];
+
+            if (vid1) {
+                sampleMedia.unshift({
+                    id: 'sample-video-1',
+                    title: 'Rekaman Video Dokumentasi Kegiatan',
+                    date: today,
+                    location: 'Area Utama Kegiatan',
+                    pic: 'Tim Publikasi & Dokumentasi',
+                    folderId: 'folder-kegiatan',
+                    privacy: 'public',
+                    description: 'Cuplikan video dokumentasi suasana kegiatan lapangan dalam format WebM.',
+                    type: 'video',
+                    mimeType: 'video/webm',
+                    fileName: 'dokumentasi-kegiatan.webm',
+                    size: vid1.size,
+                    favorite: true,
+                    blob: vid1,
+                    createdAt: Date.now()
+                });
+            }
+
+            for (const m of sampleMedia) {
+                await dbPut('media', m);
+            }
+        }
+
+        // ============================================================================
+        // 3. DATA LOADING, STORAGE INDICATOR & OBJECT URL MANAGEMENT
+        // ============================================================================
+
+        function getMediaObjectUrl(item) {
+            if (state.objectUrls.has(item.id)) {
+                return state.objectUrls.get(item.id);
+            }
+            const url = URL.createObjectURL(item.blob);
+            state.objectUrls.set(item.id, url);
+            return url;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function updateStorageIndicator() {
+            const totalMediaBytes = state.media.reduce((acc, m) => acc + (m.size || 0), 0);
+            let quotaText = '';
+            let percent = 5;
+
+            if (navigator.storage && navigator.storage.estimate) {
+                try {
+                    const est = await navigator.storage.estimate();
+                    const quota = est.quota || (500 * 1024 * 1024);
+                    percent = Math.min(100, Math.max(3, (totalMediaBytes / quota) * 100));
+                    quotaText = ` dari ${formatBytes(quota)}`;
+                } catch (e) {
+                    percent = Math.min(100, Math.max(4, (totalMediaBytes / (500 * 1024 * 1024)) * 100));
+                }
+            }
+
+            const formattedUsed = formatBytes(totalMediaBytes);
+            document.getElementById('storage-text').textContent = formattedUsed;
+            document.getElementById('storage-bar').style.width = `${percent}%`;
+            document.getElementById('storage-subtext').textContent = `${state.media.length} file tersimpan${quotaText}`;
+
+            // Mobile drawer storage sync
+            const mobText = document.getElementById('mob-storage-text');
+            const mobBar = document.getElementById('mob-storage-bar');
+            if (mobText) mobText.textContent = formattedUsed;
+            if (mobBar) mobBar.style.width = `${percent}%`;
+        }
+
+        async function refreshData() {
+            state.folders = await dbGetAll('folders');
+            state.media = await dbGetAll('media');
+            renderFolders();
+            updateCounts();
+            renderGallery();
+            updateStorageIndicator();
+            populateFolderSelects();
+        }
+
+        // ============================================================================
+        // 4. RENDERING FOLDERS, COUNTS, AND GALLERY (GRID & TIMELINE)
+        // ============================================================================
+
+        function getVisibleFolders() {
+            return state.folders.filter(f => !state.hidePrivate || f.privacy !== 'private');
+        }
+
+        function getVisibleMediaPool() {
+            const privateFolderIds = new Set(
+                state.folders.filter(f => f.privacy === 'private').map(f => f.id)
+            );
+            return state.media.filter(m => {
+                if (state.hidePrivate) {
+                    if (m.privacy === 'private') return false;
+                    if (m.folderId && privateFolderIds.has(m.folderId)) return false;
+                }
+                return true;
+            });
+        }
+
+        function updateCounts() {
+            const visibleMedia = getVisibleMediaPool();
+            document.getElementById('count-all').textContent = visibleMedia.length;
+            document.getElementById('count-image').textContent = visibleMedia.filter(m => m.type === 'image').length;
+            document.getElementById('count-video').textContent = visibleMedia.filter(m => m.type === 'video').length;
+            document.getElementById('count-favorite').textContent = visibleMedia.filter(m => m.favorite).length;
+        }
+
+        function renderFolders() {
+            const visibleFolders = getVisibleFolders();
+            const desktopList = document.getElementById('desktop-folder-list');
+            const drawerList = document.getElementById('drawer-folder-list');
+            const mobileChips = document.getElementById('mobile-folder-chips');
+
+            const buildFolderItemHTML = (folder, isMobileDrawer = false) => {
+                const isActive = state.filterType === 'folder' && state.selectedFolderId === folder.id;
+                const count = state.media.filter(m => m.folderId === folder.id && (!state.hidePrivate || m.privacy !== 'private')).length;
+                const lockBadge = folder.privacy === 'private'
+                    ? `<i data-lucide="lock" class="w-3.5 h-3.5 text-amber-500 shrink-0"></i>`
+                    : `<i data-lucide="folder" class="w-4 h-4 ${isActive ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'} shrink-0"></i>`;
+
+                return `
+                    <button onclick="setFilter('folder', '${folder.id}'); ${isMobileDrawer ? 'toggleMobileDrawer();' : ''}" 
+                        class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60'}">
+                        <span class="flex items-center gap-2.5 truncate">
+                            ${lockBadge}
+                            <span class="truncate">${escapeHtml(folder.name)}</span>
+                        </span>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 shrink-0">${count}</span>
+                    </button>
+                `;
+            };
+
+            if (visibleFolders.length === 0) {
+                const emptyMsg = `<p class="px-3 py-2 text-xs text-slate-400 italic">Tidak ada album terlihat</p>`;
+                desktopList.innerHTML = emptyMsg;
+                drawerList.innerHTML = emptyMsg;
+            } else {
+                desktopList.innerHTML = visibleFolders.map(f => buildFolderItemHTML(f, false)).join('');
+                drawerList.innerHTML = visibleFolders.map(f => buildFolderItemHTML(f, true)).join('');
+            }
+
+            // Mobile horizontal chips
+            mobileChips.innerHTML = visibleFolders.map(folder => {
+                const isActive = state.filterType === 'folder' && state.selectedFolderId === folder.id;
+                return `
+                    <button onclick="setFilter('folder', '${folder.id}')" 
+                        class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${isActive ? 'bg-brand-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">
+                        ${folder.privacy === 'private' ? '<i data-lucide="lock" class="w-3 h-3"></i>' : '<i data-lucide="folder" class="w-3 h-3"></i>'}
+                        <span>${escapeHtml(folder.name)}</span>
+                    </button>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function getFilteredAndSortedMedia() {
+            let list = getVisibleMediaPool();
+
+            // Apply Category / Folder Filter
+            if (state.filterType === 'image') {
+                list = list.filter(m => m.type === 'image');
+            } else if (state.filterType === 'video') {
+                list = list.filter(m => m.type === 'video');
+            } else if (state.filterType === 'favorite') {
+                list = list.filter(m => m.favorite);
+            } else if (state.filterType === 'folder' && state.selectedFolderId) {
+                list = list.filter(m => m.folderId === state.selectedFolderId);
+            }
+
+            // Apply Search Query
+            if (state.searchQuery.trim() !== '') {
+                const q = state.searchQuery.toLowerCase();
+                list = list.filter(m => {
+                    const folderName = (state.folders.find(f => f.id === m.folderId)?.name || '').toLowerCase();
+                    return (
+                        m.title.toLowerCase().includes(q) ||
+                        (m.description && m.description.toLowerCase().includes(q)) ||
+                        (m.location && m.location.toLowerCase().includes(q)) ||
+                        (m.pic && m.pic.toLowerCase().includes(q)) ||
+                        folderName.includes(q)
+                    );
+                });
+            }
+
+            // Apply Sort
+            list.sort((a, b) => {
+                if (state.sortBy === 'newest') {
+                    return new Date(b.date) - new Date(a.date) || b.createdAt - a.createdAt;
+                } else if (state.sortBy === 'oldest') {
+                    return new Date(a.date) - new Date(b.date) || a.createdAt - b.createdAt;
+                } else if (state.sortBy === 'az') {
+                    return a.title.localeCompare(b.title, 'id');
+                }
+                return 0;
+            });
+
+            state.filteredMediaList = list;
+            return list;
+        }
+
+        function renderGallery() {
+            const list = getFilteredAndSortedMedia();
+            const container = document.getElementById('media-content');
+
+            updateGalleryHeader();
+
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-20 px-4 text-center bg-white dark:bg-slate-900/60 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 mt-2">
+                        <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-4">
+                            <i data-lucide="image-off" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-lg font-bold mb-1">Belum Ada Media Ditemukan</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mb-6">
+                            ${state.searchQuery ? 'Coba gunakan kata kunci pencarian lain atau hapus filter aktif.' : 'Unggah foto atau video pertama Anda ke album ini untuk mulai menyimpan kenangan.'}
+                        </p>
+                        <button onclick="openUploadModal()" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-md inline-flex items-center gap-2 transition-all">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <span>Unggah Foto / Video</span>
+                        </button>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            if (state.viewMode === 'grid') {
+                container.innerHTML = `
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+                        ${list.map((item, idx) => createMediaCardHTML(item, idx)).join('')}
+                    </div>
+                `;
+            } else {
+                // Timeline View grouped by Date
+                const groups = {};
+                list.forEach((item, idx) => {
+                    const dateKey = item.date || 'Tanpa Tanggal';
+                    if (!groups[dateKey]) groups[dateKey] = [];
+                    groups[dateKey].push({ item, idx });
+                });
+
+                container.innerHTML = Object.entries(groups).map(([dateStr, entries]) => `
+                    <section class="mb-8">
+                        <div class="flex items-center gap-3 mb-3 sticky top-0 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-sm py-1.5 z-10">
+                            <div class="w-2.5 h-2.5 rounded-full bg-brand-500"></div>
+                            <h3 class="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">${formatIndonesianDate(dateStr)}</h3>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400">${entries.length} item</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 pl-3 border-l-2 border-slate-200 dark:border-slate-800 ml-1">
+                            ${entries.map(({ item, idx }) => createMediaCardHTML(item, idx)).join('')}
+                        </div>
+                    </section>
+                `).join('');
+            }
+
+            lucide.createIcons();
+        }
+
+        function createMediaCardHTML(item, index) {
+            const url = getMediaObjectUrl(item);
+            const folder = state.folders.find(f => f.id === item.folderId);
+            const isVideo = item.type === 'video';
+
+            return `
+                <div onclick="openLightbox(${index})" class="group relative bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col">
+                    <!-- Thumbnail Aspect Box -->
+                    <div class="relative aspect-[4/3] bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                        ${isVideo
+                            ? `<video src="${url}" muted preload="metadata" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"></video>
+                               <div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                   <div class="w-10 h-10 rounded-full bg-black/60 backdrop-blur-xs text-white flex items-center justify-center border border-white/25 group-hover:scale-110 transition-transform">
+                                       <i data-lucide="play" class="w-4 h-4 fill-white ml-0.5"></i>
+                                   </div>
+                               </div>`
+                            : `<img src="${url}" alt="${escapeHtml(item.title)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">`
+                        }
+
+                        <!-- Top Badges -->
+                        <div class="absolute top-2 left-2 flex items-center gap-1">
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider backdrop-blur-md ${isVideo ? 'bg-purple-600/85 text-white' : 'bg-black/50 text-white'}">
+                                ${isVideo ? 'Video' : 'Foto'}
+                            </span>
+                            ${item.privacy === 'private' ? `
+                                <span class="p-1 rounded-lg bg-amber-500/90 text-white backdrop-blur-md" title="Media Privat">
+                                    <i data-lucide="lock" class="w-3 h-3"></i>
+                                </span>
+                            ` : ''}
+                        </div>
+
+                        <!-- Quick Favorite Button -->
+                        <button onclick="event.stopPropagation(); toggleFavorite('${item.id}')" title="Favorit" class="absolute top-2 right-2 p-1.5 rounded-xl bg-black/40 hover:bg-black/70 backdrop-blur-md text-white transition-colors">
+                            <i data-lucide="heart" class="w-3.5 h-3.5 ${item.favorite ? 'fill-rose-500 text-rose-500' : ''}"></i>
+                        </button>
+                    </div>
+
+                    <!-- Card Info -->
+                    <div class="p-3 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-semibold text-xs sm:text-sm text-slate-800 dark:text-slate-100 line-clamp-1 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                                ${escapeHtml(item.title)}
+                            </h4>
+                            ${item.location ? `
+                                <p class="text-[11px] text-brand-600 dark:text-brand-400 flex items-center gap-1 mt-1 truncate">
+                                    <i data-lucide="map-pin" class="w-3 h-3 shrink-0"></i>
+                                    <span class="truncate">${escapeHtml(item.location)}</span>
+                                </p>
+                            ` : ''}
+                            ${item.description ? `<p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">${escapeHtml(item.description)}</p>` : ''}
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                            <span class="truncate max-w-[55%]">${folder ? escapeHtml(folder.name) : 'Umum'}</span>
+                            <span class="shrink-0">${formatShortDate(item.date)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateGalleryHeader() {
+            const titleEl = document.getElementById('gallery-title');
+            const subEl = document.getElementById('gallery-subtitle');
+            const badgeEl = document.getElementById('gallery-badge');
+            const folderActions = document.getElementById('folder-actions');
+
+            badgeEl.classList.add('hidden');
+            badgeEl.classList.remove('inline-flex');
+            folderActions.classList.add('hidden');
+            folderActions.classList.remove('flex');
+
+            if (state.filterType === 'all') {
+                titleEl.textContent = 'Semua Media';
+                subEl.textContent = `Menampilkan ${state.filteredMediaList.length} foto & video dalam galeri`;
+            } else if (state.filterType === 'image') {
+                titleEl.textContent = 'Koleksi Foto';
+                subEl.textContent = `Menampilkan ${state.filteredMediaList.length} gambar tersimpan`;
+            } else if (state.filterType === 'video') {
+                titleEl.textContent = 'Koleksi Video';
+                subEl.textContent = `Menampilkan ${state.filteredMediaList.length} rekaman video`;
+            } else if (state.filterType === 'favorite') {
+                titleEl.textContent = 'Media Favorit';
+                subEl.textContent = `Menampilkan ${state.filteredMediaList.length} kenangan pilihan Anda`;
+            } else if (state.filterType === 'folder') {
+                const folder = state.folders.find(f => f.id === state.selectedFolderId);
+                if (folder) {
+                    titleEl.textContent = folder.name;
+                    subEl.textContent = `${state.filteredMediaList.length} item di dalam album ini`;
+                    if (folder.privacy === 'private') {
+                        badgeEl.classList.remove('hidden');
+                        badgeEl.classList.add('inline-flex');
+                    }
+                    folderActions.classList.remove('hidden');
+                    folderActions.classList.add('flex');
+                }
+            }
+        }
+
+        // ============================================================================
+        // 5. NAVIGATION, FILTERS, SEARCH, SORT & VIEW MODES
+        // ============================================================================
+
+        function setFilter(type, folderId) {
+            state.filterType = type;
+            state.selectedFolderId = folderId;
+
+            // Update Desktop Sidebar Nav Active Styling
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                const isMatch = btn.dataset.nav === type;
+                btn.className = isMatch
+                    ? 'nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
+                    : 'nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors';
+            });
+
+            // Update Mobile Bottom Nav Styling
+            document.querySelectorAll('.mob-nav-item').forEach(btn => {
+                const isMatch = btn.dataset.mobNav === type;
+                btn.className = isMatch
+                    ? 'mob-nav-item flex flex-col items-center justify-center p-2 rounded-xl text-brand-600 dark:text-brand-400 min-w-[60px]'
+                    : 'mob-nav-item flex flex-col items-center justify-center p-2 rounded-xl text-slate-500 dark:text-slate-400 min-w-[60px]';
+            });
+
+            renderFolders();
+            renderGallery();
+        }
+
+        function handleSearch(val) {
+            state.searchQuery = val;
+            const clearBtn = document.getElementById('clear-search-btn');
+            if (val.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            renderGallery();
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            handleSearch('');
+        }
+
+        function handleSort(val) {
+            state.sortBy = val;
+            renderGallery();
+        }
+
+        function setViewMode(mode) {
+            state.viewMode = mode;
+            const btnGrid = document.getElementById('btn-view-grid');
+            const btnTimeline = document.getElementById('btn-view-timeline');
+            const mobLabel = document.getElementById('mobile-view-label');
+
+            if (mode === 'grid') {
+                btnGrid.className = 'p-1.5 rounded-lg bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm transition-all';
+                btnTimeline.className = 'p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all';
+                if (mobLabel) mobLabel.textContent = 'Timeline';
+            } else {
+                btnTimeline.className = 'p-1.5 rounded-lg bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm transition-all';
+                btnGrid.className = 'p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all';
+                if (mobLabel) mobLabel.textContent = 'Grid';
+            }
+            renderGallery();
+        }
+
+        function togglePrivateVisibility() {
+            state.hidePrivate = !state.hidePrivate;
+
+            // Update Desktop Switch
+            const deskBtn = document.getElementById('toggle-private-btn');
+            const deskKnob = document.getElementById('toggle-private-knob');
+            const lockIcon = document.getElementById('private-lock-icon');
+
+            // Update Mobile Switch
+            const mobBtn = document.getElementById('mob-toggle-private-btn');
+            const mobKnob = document.getElementById('mob-toggle-private-knob');
+
+            if (state.hidePrivate) {
+                deskBtn.classList.replace('bg-slate-300', 'bg-amber-500');
+                deskBtn.classList.remove('dark:bg-slate-600');
+                deskKnob.classList.replace('translate-x-0', 'translate-x-4');
+                lockIcon.setAttribute('data-lucide', 'lock');
+
+                mobBtn.classList.replace('bg-slate-300', 'bg-amber-500');
+                mobKnob.classList.replace('translate-x-0', 'translate-x-4');
+
+                // If currently viewing a private folder, reset to All
+                if (state.filterType === 'folder') {
+                    const activeFolder = state.folders.find(f => f.id === state.selectedFolderId);
+                    if (activeFolder && activeFolder.privacy === 'private') {
+                        setFilter('all', null);
+                    }
+                }
+                showToast('Album & media privat disembunyikan');
+            } else {
+                deskBtn.classList.replace('bg-amber-500', 'bg-slate-300');
+                deskBtn.classList.add('dark:bg-slate-600');
+                deskKnob.classList.replace('translate-x-4', 'translate-x-0');
+                lockIcon.setAttribute('data-lucide', 'unlock');
+
+                mobBtn.classList.replace('bg-amber-500', 'bg-slate-300');
+                mobKnob.classList.replace('translate-x-4', 'translate-x-0');
+                showToast('Album & media privat ditampilkan');
+            }
+
+            renderFolders();
+            updateCounts();
+            renderGallery();
+            lucide.createIcons();
+        }
+
+        // ============================================================================
+        // 6. FOLDER / ALBUM MANAGEMENT
+        // ============================================================================
+
+        function populateFolderSelects() {
+            const uploadSelect = document.getElementById('upload-folder');
+            const editSelect = document.getElementById('edit-folder');
+
+            const optionsHTML = state.folders.map(f =>
+                `<option value="${f.id}">${f.privacy === 'private' ? '🔒 ' : '📁 '}${escapeHtml(f.name)}</option>`
+            ).join('');
+
+            uploadSelect.innerHTML = optionsHTML;
+            editSelect.innerHTML = optionsHTML;
+
+            if (state.filterType === 'folder' && state.selectedFolderId) {
+                uploadSelect.value = state.selectedFolderId;
+            }
+        }
+
+        function openFolderModal() {
+            document.getElementById('folder-name-input').value = '';
+            const modal = document.getElementById('folder-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('folder-name-input').focus(), 50);
+        }
+
+        function closeFolderModal() {
+            const modal = document.getElementById('folder-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function handleCreateFolder(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('folder-name-input');
+            const name = nameInput.value.trim();
+            if (!name) return;
+
+            const privacy = document.querySelector('input[name="folder-privacy"]:checked').value;
+            const newFolder = {
+                id: 'folder-' + Date.now(),
+                name,
+                privacy,
+                createdAt: Date.now()
+            };
+
+            await dbPut('folders', newFolder);
+            closeFolderModal();
+
+            if (privacy === 'private' && state.hidePrivate) {
+                togglePrivateVisibility();
+            }
+
+            await refreshData();
+            setFilter('folder', newFolder.id);
+            showToast(`Album "${name}" berhasil dibuat`);
+        }
+
+        async function toggleCurrentFolderPrivacy() {
+            if (state.filterType !== 'folder' || !state.selectedFolderId) return;
+            const folder = state.folders.find(f => f.id === state.selectedFolderId);
+            if (!folder) return;
+
+            folder.privacy = folder.privacy === 'public' ? 'private' : 'public';
+            await dbPut('folders', folder);
+            await refreshData();
+            showToast(`Status album diubah menjadi ${folder.privacy === 'private' ? 'Privat' : 'Publik'}`);
+        }
+
+        function deleteCurrentFolder() {
+            if (state.filterType !== 'folder' || !state.selectedFolderId) return;
+            const folder = state.folders.find(f => f.id === state.selectedFolderId);
+            if (!folder) return;
+
+            openConfirmDialog(
+                `Hapus Album "${folder.name}"?`,
+                'Album akan dihapus. Media di dalamnya akan dipindahkan ke album pertama yang tersedia.',
+                async () => {
+                    const fallbackFolder = state.folders.find(f => f.id !== folder.id);
+                    const fallbackId = fallbackFolder ? fallbackFolder.id : '';
+
+                    // Reassign media in deleted folder
+                    for (const item of state.media) {
+                        if (item.folderId === folder.id) {
+                            item.folderId = fallbackId;
+                            await dbPut('media', item);
+                        }
+                    }
+
+                    await dbDelete('folders', folder.id);
+                    setFilter('all', null);
+                    await refreshData();
+                    showToast(`Album "${folder.name}" dihapus`);
+                }
+            );
+        }
+
+        // ============================================================================
+        // 7. UPLOAD & DRAG-AND-DROP WORKFLOW
+        // ============================================================================
+
+        function openUploadModal(preloadedFiles = null) {
+            const modal = document.getElementById('upload-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // Default date to today
+            document.getElementById('upload-date').value = new Date().toISOString().split('T')[0];
+            populateFolderSelects();
+
+            if (preloadedFiles && preloadedFiles.length > 0) {
+                handleFileSelect(preloadedFiles);
+            }
+        }
+
+        function closeUploadModal() {
+            const modal = document.getElementById('upload-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('upload-form').reset();
+            clearSelectedFiles();
+        }
+
+        function handleFileSelect(fileList) {
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'];
+            const files = Array.from(fileList).filter(f => validTypes.includes(f.type));
+
+            if (files.length === 0) {
+                showToast('Format file tidak didukung. Gunakan JPG, PNG, WEBP, MP4, atau WEBM.');
+                return;
+            }
+
+            state.selectedUploadFiles = [...state.selectedUploadFiles, ...files];
+            renderSelectedFilesPreview();
+
+            // Auto-fill title from first file name if empty
+            const titleInput = document.getElementById('upload-title');
+            if (!titleInput.value && state.selectedUploadFiles.length > 0) {
+                const rawName = state.selectedUploadFiles[0].name.replace(/\.[^/.]+$/, '');
+                titleInput.value = rawName.replace(/[-_]/g, ' ');
+            }
+        }
+
+        function clearSelectedFiles() {
+            state.selectedUploadFiles = [];
+            document.getElementById('file-input').value = '';
+            renderSelectedFilesPreview();
+        }
+
+        function renderSelectedFilesPreview() {
+            const container = document.getElementById('selected-files-preview');
+            const listEl = document.getElementById('selected-files-list');
+            const countEl = document.getElementById('selected-files-count');
+
+            if (state.selectedUploadFiles.length === 0) {
+                container.classList.add('hidden');
+                listEl.innerHTML = '';
+                return;
+            }
+
+            container.classList.remove('hidden');
+            countEl.textContent = `${state.selectedUploadFiles.length} file siap diunggah`;
+
+            listEl.innerHTML = state.selectedUploadFiles.map((file, idx) => {
+                const tempUrl = URL.createObjectURL(file);
+                const isVideo = file.type.startsWith('video/');
+                return `
+                    <div class="relative aspect-square rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
+                        ${isVideo
+                            ? `<video src="${tempUrl}" class="w-full h-full object-cover"></video>
+                               <span class="absolute bottom-1 left-1 px-1.5 py-0.5 text-[9px] font-bold bg-purple-600 text-white rounded">VID</span>`
+                            : `<img src="${tempUrl}" class="w-full h-full object-cover">`
+                        }
+                        <button type="button" onclick="removeSelectedFile(${idx})" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center text-xs">×</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function removeSelectedFile(index) {
+            state.selectedUploadFiles.splice(index, 1);
+            renderSelectedFilesPreview();
+        }
+
+        async function handleUploadSubmit(e) {
+            e.preventDefault();
+            if (state.selectedUploadFiles.length === 0) {
+                showToast('Pilih minimal satu file foto atau video terlebih dahulu.');
+                return;
+            }
+
+            const btn = document.getElementById('btn-submit-upload');
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Menyimpan...</span>`;
+            lucide.createIcons();
+
+            try {
+                const baseTitle = document.getElementById('upload-title').value.trim();
+                const date = document.getElementById('upload-date').value;
+                const location = document.getElementById('upload-location').value.trim();
+                const pic = document.getElementById('upload-pic').value.trim();
+                const folderId = document.getElementById('upload-folder').value;
+                const privacy = document.getElementById('upload-privacy').value;
+                const description = document.getElementById('upload-desc').value.trim();
+
+                const total = state.selectedUploadFiles.length;
+
+                for (let i = 0; i < total; i++) {
+                    const file = state.selectedUploadFiles[i];
+                    const itemTitle = total > 1 ? `${baseTitle} (${i + 1})` : baseTitle;
+                    const mediaItem = {
+                        id: 'media-' + Date.now() + '-' + i,
+                        title: itemTitle,
+                        date,
+                        location,
+                        pic,
+                        folderId,
+                        privacy,
+                        description,
+                        type: file.type.startsWith('video/') ? 'video' : 'image',
+                        mimeType: file.type,
+                        fileName: file.name,
+                        size: file.size,
+                        favorite: false,
+                        blob: file,
+                        createdAt: Date.now() + i
+                    };
+                    await dbPut('media', mediaItem);
+                }
+
+                closeUploadModal();
+                await refreshData();
+                showToast(`${total} dokumentasi berhasil disimpan ke penyimpanan lokal!`);
+            } catch (err) {
+                console.error(err);
+                showToast('Gagal menyimpan media. Pastikan ruang penyimpanan browser mencukupi.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span>Simpan ke Galeri</span>`;
+                lucide.createIcons();
+            }
+        }
+
+        // Global Drag & Drop Handlers
+        function setupGlobalDragAndDrop() {
+            const dropzone = document.getElementById('global-dropzone');
+            let dragCounter = 0;
+
+            window.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                dragCounter++;
+                if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+                    dropzone.classList.remove('hidden');
+                }
+            });
+
+            window.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dragCounter--;
+                if (dragCounter <= 0) {
+                    dragCounter = 0;
+                    dropzone.classList.add('hidden');
+                }
+            });
+
+            window.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            window.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dragCounter = 0;
+                dropzone.classList.add('hidden');
+                if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+                    openUploadModal(e.dataTransfer.files);
+                }
+            });
+        }
+
+        // ============================================================================
+        // 8. LIGHTBOX PREVIEW, FAVORITE, DOWNLOAD, EDIT & DELETE
+        // ============================================================================
+
+        async function toggleFavorite(id) {
+            const item = state.media.find(m => m.id === id);
+            if (!item) return;
+            item.favorite = !item.favorite;
+            await dbPut('media', item);
+            await refreshData();
+            if (state.lightboxIndex !== -1) {
+                updateLightboxFavoriteUI();
+            }
+            showToast(item.favorite ? 'Ditambahkan ke Favorit' : 'Dihapus dari Favorit');
+        }
+
+        function openLightbox(index) {
+            if (index < 0 || index >= state.filteredMediaList.length) return;
+            state.lightboxIndex = index;
+            const modal = document.getElementById('lightbox-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            renderLightboxContent();
+        }
+
+        function closeLightbox() {
+            const modal = document.getElementById('lightbox-modal');
+            // Pause any playing video
+            const vid = modal.querySelector('video');
+            if (vid) vid.pause();
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            state.lightboxIndex = -1;
+        }
+
+        function navigateLightbox(step) {
+            const total = state.filteredMediaList.length;
+            if (total === 0) return;
+            state.lightboxIndex = (state.lightboxIndex + step + total) % total;
+            renderLightboxContent();
+        }
+
+        function renderLightboxContent() {
+            const item = state.filteredMediaList[state.lightboxIndex];
+            if (!item) return;
+
+            const url = getMediaObjectUrl(item);
+            const folder = state.folders.find(f => f.id === item.folderId);
+
+            document.getElementById('lb-counter').textContent = `${state.lightboxIndex + 1} / ${state.filteredMediaList.length}`;
+            document.getElementById('lb-title').textContent = item.title;
+            const locPart = item.location ? ` • 📍 ${item.location}` : '';
+            const picPart = item.pic ? ` • 👤 ${item.pic}` : '';
+            document.getElementById('lb-meta').textContent = `${formatIndonesianDate(item.date)}${locPart}${picPart} • ${folder ? folder.name : 'Umum'}`;
+
+            const descBar = document.getElementById('lb-caption-bar');
+            const descEl = document.getElementById('lb-desc');
+            if (item.description) {
+                descBar.classList.remove('hidden');
+                descEl.textContent = item.description;
+            } else {
+                descBar.classList.add('hidden');
+            }
+
+            const wrapper = document.getElementById('lb-media-wrapper');
+            if (item.type === 'video') {
+                wrapper.innerHTML = `
+                    <video src="${url}" controls autoplay class="max-h-[75vh] max-w-[90vw] rounded-2xl shadow-2xl bg-black outline-none"></video>
+                `;
+            } else {
+                wrapper.innerHTML = `
+                    <img src="${url}" alt="${escapeHtml(item.title)}" class="max-h-[76vh] max-w-[90vw] object-contain rounded-xl shadow-2xl">
+                `;
+            }
+
+            updateLightboxFavoriteUI();
+            lucide.createIcons();
+        }
+
+        function updateLightboxFavoriteUI() {
+            const item = state.filteredMediaList[state.lightboxIndex];
+            const btn = document.getElementById('lb-btn-fav');
+            if (!item || !btn) return;
+            btn.innerHTML = `<i data-lucide="heart" class="w-5 h-5 ${item.favorite ? 'fill-rose-500 text-rose-500' : ''}"></i>`;
+            lucide.createIcons();
+        }
+
+        function toggleLightboxFavorite() {
+            const item = state.filteredMediaList[state.lightboxIndex];
+            if (item) toggleFavorite(item.id);
+        }
+
+        function downloadCurrentMedia() {
+            const item = state.filteredMediaList[state.lightboxIndex];
+            if (!item) return;
+            const url = getMediaObjectUrl(item);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = item.fileName || `${item.title}.${item.type === 'video' ? 'webm' : 'jpg'}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast('Mengunduh file...');
+        }
+
+        function deleteCurrentMedia() {
+            const item = state.filteredMediaList[state.lightboxIndex];
+            if (!item) return;
+
+            openConfirmDialog(
+                'Hapus Media Ini?',
+                `"${item.title}" akan dihapus secara permanen dari penyimpanan lokal browser.`,
+                async () => {
+                    if (state.objectUrls.has(item.id)) {
+                        URL.revokeObjectURL(state.objectUrls.get(item.id));
+                        state.objectUrls.delete(item.id);
+                    }
+                    await dbDelete('media', item.id);
+                    await refreshData();
+
+                    if (state.filteredMediaList.length === 0) {
+                        closeLightbox();
+                    } else {
+                        state.lightboxIndex = Math.min(state.lightboxIndex, state.filteredMediaList.length - 1);
+                        renderLightboxContent();
+                    }
+                    showToast('Media berhasil dihapus');
+                }
+            );
+        }
+
+        // Edit Media Info Modal
+        function openEditMediaModal() {
+            const item = state.filteredMediaList[state.lightboxIndex];
+            if (!item) return;
+
+            populateFolderSelects();
+            document.getElementById('edit-title').value = item.title;
+            document.getElementById('edit-date').value = item.date;
+            document.getElementById('edit-location').value = item.location || '';
+            document.getElementById('edit-pic').value = item.pic || '';
+            document.getElementById('edit-folder').value = item.folderId;
+            document.getElementById('edit-privacy').value = item.privacy || 'public';
+            document.getElementById('edit-desc').value = item.description || '';
+
+            const modal = document.getElementById('edit-media-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeEditMediaModal() {
+            const modal = document.getElementById('edit-media-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function handleSaveMediaEdit(e) {
+            e.preventDefault();
+            const item = state.filteredMediaList[state.lightboxIndex];
+            if (!item) return;
+
+            item.title = document.getElementById('edit-title').value.trim();
+            item.date = document.getElementById('edit-date').value;
+            item.location = document.getElementById('edit-location').value.trim();
+            item.pic = document.getElementById('edit-pic').value.trim();
+            item.folderId = document.getElementById('edit-folder').value;
+            item.privacy = document.getElementById('edit-privacy').value;
+            item.description = document.getElementById('edit-desc').value.trim();
+
+            await dbPut('media', item);
+            closeEditMediaModal();
+            await refreshData();
+
+            // Re-find index in updated filtered list
+            const newIdx = state.filteredMediaList.findIndex(m => m.id === item.id);
+            if (newIdx !== -1) {
+                state.lightboxIndex = newIdx;
+                renderLightboxContent();
+            } else {
+                closeLightbox();
+            }
+            showToast('Perubahan berhasil disimpan');
+        }
+
+        // ============================================================================
+        // 9. THEME, DRAWER, KEYBOARD SHORTCUTS, CONFIRM DIALOG & HELPERS
+        // ============================================================================
+
+        function initTheme() {
+            const saved = localStorage.getItem('album_digital_theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (saved === 'dark' || (!saved && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('album_digital_theme', isDark ? 'dark' : 'light');
+        }
+
+        function exportActivitySummary() {
+            const list = state.filteredMediaList;
+            if (list.length === 0) {
+                showToast('Tidak ada data kegiatan untuk direkap.');
+                return;
+            }
+            const lines = [
+                'REKAP DOKUMENTASI KEGIATAN',
+                `Total Dokumentasi: ${list.length} item`,
+                '----------------------------------------'
+            ];
+            list.forEach((m, idx) => {
+                const folder = state.folders.find(f => f.id === m.folderId)?.name || 'Umum';
+                lines.push(`${idx + 1}. [${m.type.toUpperCase()}] ${m.title}`);
+                lines.push(`   Tanggal : ${formatIndonesianDate(m.date)}`);
+                if (m.location) lines.push(`   Lokasi  : ${m.location}`);
+                if (m.pic) lines.push(`   PIC     : ${m.pic}`);
+                lines.push(`   Kategori: ${folder}`);
+                if (m.description) lines.push(`   Catatan : ${m.description}`);
+                lines.push('');
+            });
+
+            const textarea = document.createElement('textarea');
+            textarea.value = lines.join('\n');
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('Rekap laporan kegiatan disalin ke clipboard!');
+        }
+
+        function toggleMobileDrawer() {
+            const drawer = document.getElementById('mobile-drawer');
+            drawer.classList.toggle('hidden');
+        }
+
+        function openConfirmDialog(title, message, onConfirm) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            const modal = document.getElementById('confirm-modal');
+            const yesBtn = document.getElementById('confirm-yes-btn');
+
+            yesBtn.onclick = async () => {
+                closeConfirmModal();
+                await onConfirm();
+            };
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-slate-900 dark:bg-slate-800 text-white text-xs sm:text-sm font-medium px-4 py-3 rounded-2xl shadow-xl border border-white/10 flex items-center gap-2.5 transform transition-all duration-300 translate-y-2 opacity-0';
+            toast.innerHTML = `
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                <span>${escapeHtml(message)}</span>
+            `;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function formatIndonesianDate(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                const date = new Date(dateStr + 'T00:00:00');
+                return date.toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            } catch {
+                return dateStr;
+            }
+        }
+
+        function formatShortDate(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                const date = new Date(dateStr + 'T00:00:00');
+                return date.toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+            } catch {
+                return dateStr;
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Keyboard & Touch Swipe Support for Lightbox
+        document.addEventListener('keydown', (e) => {
+            if (state.lightboxIndex === -1) return;
+            if (!document.getElementById('edit-media-modal').classList.contains('hidden')) return;
+
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowRight') navigateLightbox(1);
+            if (e.key === 'ArrowLeft') navigateLightbox(-1);
+        });
+
+        let touchStartX = 0;
+        const lbStage = document.getElementById('lb-stage');
+        lbStage.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        lbStage.addEventListener('touchend', (e) => {
+            const diff = e.changedTouches[0].screenX - touchStartX;
+            if (Math.abs(diff) > 50) {
+                navigateLightbox(diff < 0 ? 1 : -1);
+            }
+        }, { passive: true });
+
+        // ============================================================================
+        // 10. APPLICATION BOOTSTRAP
+        // ============================================================================
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            lucide.createIcons();
+            setupGlobalDragAndDrop();
+
+            try {
+                await initDB();
+                await seedInitialDataIfEmpty();
+                await refreshData();
+            } catch (err) {
+                console.error('Initialization failed:', err);
+                showToast('Terjadi kesalahan saat memuat penyimpanan lokal.');
+            }
+        });
+    </script>
+</body>
+</html>
